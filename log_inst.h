@@ -32,9 +32,9 @@ typedef int (*log_filter_cb_t)(const void   *log_data,
                                void         *cb_data);
 
 typedef struct {
-    const char         *inst_id;
+    char               *inst_id;
     FILE               *file;
-    const char         *file_path;
+    char               *file_path;
     pthread_mutex_t    *write_mtx;
     rotate_file_info_t  rt_file_opt;
     void               *buffer_inst;
@@ -50,6 +50,18 @@ typedef struct {
     log_filter_cb_t     filter_cb;
     void               *filter_data;
 } log_inst_t;
+
+/* Default values */
+#define RT_FIlE_DFLT_SUFIX     "bak"
+#define RT_FILE_DFLT_FILE_SIZE 10000000
+#define RT_FILE_DFLT_FILE_CNT  10
+#define INST_DFLT_FILE         "log"
+#define INST_DFLT_BUFF_TYPE    BUFF_TYPE_RING
+#define INST_DFLT_BUFF_SIZE    10000
+
+int get_default_log_inst_cfg(log_inst_t *log_inst_cfg);
+
+int get_default_rt_file_cfg(rotate_file_info_t *rt_file_cfg);
 
 /*
  * - open file descriptor;
@@ -94,7 +106,7 @@ int remove_log_files_inst(log_inst_t *log_inst);
 
 /*
  * default log decorator for strings
- * format: [date taime] [log level] log string
+ * format: [date time] [log level] log string
  */
 int log_decorate_str_dflt(const void    *log_str,
                           unsigned int   data_len,

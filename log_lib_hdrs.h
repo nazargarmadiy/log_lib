@@ -7,5 +7,6 @@
 #include "log_unit.h"
 #include "log_inst.h"
 #include "common_func.h"
+#include "cfg_file_parse.h"
 
 #endif /*LOG_LIB_HDRS_H*/

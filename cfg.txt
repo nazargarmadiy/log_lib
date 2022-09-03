@@ -1,0 +1,22 @@
+#comment
+test_unit_1
+{
+file : test_unit_1_file.txt
+buff_size : 5
+rotate_file_count : 5
+rotate_file_prefix : rt_prfx-
+file_max_size : 2048
+#another comment
+}
+
+test_unit_2
+{
+	file : test_unit_2_file.txt
+	buff_size : 10
+	rotate_file_count : 3
+	rotate_file_prefix : prfx_rt_
+	file_max_size : 1024
+	#another comment
+}
+
+

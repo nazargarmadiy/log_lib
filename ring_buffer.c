@@ -61,7 +61,7 @@ int rbuf_deinit(r_buf_inst_t *rbuf_inst)
         }
         tmp_node = curr_node;
         curr_node = curr_node->next;
-        safe_free(&tmp_node);
+        safe_free((void**)&tmp_node);
     }
 
     memset(rbuf_inst, 0, sizeof(r_buf_inst_t));

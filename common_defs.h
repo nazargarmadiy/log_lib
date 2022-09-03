@@ -26,6 +26,7 @@ enum {
 #define ERR_NULL_PTR  1001
 #define ERR_BAD_COND  1002
 #define ERR_UNXP_CASE 1003
+#define ERR_NOT_FOUND 1004
 
 /*IO modes*/
 #define IO_READ                       "r"

@@ -33,6 +33,44 @@ static int get_curr_max_size(log_inst_t   *log_inst,
                              unsigned int *curr,
                              unsigned int *max);
 
+int get_default_log_inst_cfg(log_inst_t *log_inst_cfg)
+{
+    int err = ERR_NO_ERR;
+
+    sanity_null_ptr(log_inst_cfg);
+
+    memset(log_inst_cfg, 0, sizeof(log_inst_t));
+
+    err = get_default_rt_file_cfg(&log_inst_cfg->rt_file_opt);
+    sanity_err(err);
+
+    log_inst_cfg->buff_size = INST_DFLT_BUFF_SIZE;
+    log_inst_cfg->file_path = INST_DFLT_FILE;
+    log_inst_cfg->buffer_type = INST_DFLT_BUFF_TYPE;
+
+exit_label:
+    return err;
+}
+
+int get_default_rt_file_cfg(rotate_file_info_t *rt_file_cfg)
+{
+    int    err = ERR_NO_ERR;
+    size_t len = strlen(RT_FIlE_DFLT_SUFIX);
+
+    sanity_null_ptr(rt_file_cfg);
+
+    memset(rt_file_cfg, 0, sizeof(rotate_file_info_t));
+
+    rt_file_cfg->max_file_cnt = RT_FILE_DFLT_FILE_CNT;
+    rt_file_cfg->max_file_size = RT_FILE_DFLT_FILE_SIZE;
+    rt_file_cfg->rt_sufix = calloc(1, len +1);
+    sanity_null_ptr(rt_file_cfg->rt_sufix);
+    strncpy(rt_file_cfg->rt_sufix, RT_FIlE_DFLT_SUFIX, len);
+
+exit_label:
+    return err;
+}
+
 int init_log_inst(log_inst_t *log_inst)
 {
     int err = ERR_NO_ERR;
@@ -101,7 +139,7 @@ int deinit_log_inst(log_inst_t *log_inst)
 
     sys_err = pthread_mutex_destroy(log_inst->write_mtx);
     sanity_require(!sys_err);
-    safe_free(&(log_inst->write_mtx));
+    safe_free((void**)&(log_inst->write_mtx));
     log_inst->write_mtx = NULL;
 
     switch (log_inst->buffer_type) {
@@ -605,6 +643,6 @@ int log_decorate_str_dflt(const void    *log_str,
     *dcrt_log = dcrt_str;
 
 exit_label:
-    safe_free(&date_time_str);
+    safe_free((void**)&date_time_str);
     return err;
 }

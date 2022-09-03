@@ -9,7 +9,8 @@ OBJECTS = main.o \
           log_level.o \
           log_inst.o \
           common_func.o \
-          log_unit.o
+          log_unit.o \
+          cfg_file_parse.o
 OBJS = $(patsubst %,$(OUTPUT_OBJ_DIR)/%,$(OBJECTS))
 RM = rm -rf
 GDB = gdb
@@ -49,6 +50,9 @@ $(OUTPUT_OBJ_DIR)/common_func.o : common_func.c common_func.h
 
 $(OUTPUT_OBJ_DIR)/log_unit.o : log_unit.c log_unit.h
 	cc $(CFLAGS) -o $@ log_unit.c
+
+$(OUTPUT_OBJ_DIR)/cfg_file_parse.o : cfg_file_parse.c cfg_file_parse.h
+	cc $(CFLAGS) -o $@ cfg_file_parse.c
 
 clean :
 	$(RM) $(OUTPUT_OBJ_DIR)/*.o $(OUTPUT_OBJ_DIR)/$(EXECUTABLE)

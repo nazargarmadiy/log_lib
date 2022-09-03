@@ -5,7 +5,7 @@
 #include "common_defs.h"
 
 typedef struct {
-    const char   *rt_sufix;
+    char         *rt_sufix;
     long long     max_file_size;
     unsigned int  max_file_cnt;
 } rotate_file_info_t;

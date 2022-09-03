@@ -15,11 +15,16 @@ int main(int argc, char **argv)
 	int   err = ERR_NO_ERR;
 	char *time_str = NULL;
 
+	/****/
+	log_unit_t unit = {0};
+	read_apply_cfg_file("cfg.txt", &unit);
+	/****/
+
 	err = get_date_time_str(true, NULL, &time_str);
 	sanity_err(err);
 
 	printf("start testing at %s\n", time_str);
-	safe_free(&time_str);
+	safe_free((void**)&time_str);
 
 	err = do_test_cases();
 
@@ -28,7 +33,7 @@ int main(int argc, char **argv)
 
 exit_label:
     printf("testing finished at %s with %i error\n", time_str, err);
-	safe_free(&time_str);
+	safe_free((void**)&time_str);
     return err;
 }
 
@@ -58,7 +63,7 @@ int do_test_cases()
     err = log_unit_init(&log_unit);
     sanity_err(err);
 
-    for(int i = 0; i < 20; i++)
+    for(int i = 0; i < 10; i++)
     {
     	err = log_unit_write_str_fmt_log(&log_unit, DEBUG, "log # %i;\n", i);
         sanity_err(err);

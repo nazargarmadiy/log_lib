@@ -31,7 +31,7 @@ int wbuff_deinit(w_buff_inst_t *buff_inst)
     sanity_err(err);
 
     if(buff_inst->nodes_arr){
-        safe_free(&(buff_inst->nodes_arr));
+        safe_free((void**)&(buff_inst->nodes_arr));
     }
 
     memset(buff_inst, 0, sizeof(*buff_inst));

@@ -10,7 +10,7 @@
 typedef struct {
      log_inst_t   *inst_arr;
      unsigned int  inst_cnt;
-     const char   *cfg_file_path;
+     char         *cfg_file_path;
 } log_unit_t;
 
 #define MAX_FMT_STR_LEN 1024
