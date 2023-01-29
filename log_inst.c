@@ -127,20 +127,21 @@ int deinit_log_inst(log_inst_t *log_inst)
     int sys_err = 0;
 
     sanity_null_ptr(log_inst);
-    sanity_null_ptr(log_inst->write_mtx);
 
     err = flush_log_inst(log_inst);
     sanity_err(err);
 
-    if(log_inst->file){
+    if(log_inst->file) {
         close_file(&(log_inst->file));
         sanity_err(err);
     }
 
-    sys_err = pthread_mutex_destroy(log_inst->write_mtx);
-    sanity_require(!sys_err);
-    safe_free((void**)&(log_inst->write_mtx));
-    log_inst->write_mtx = NULL;
+    if(log_inst->write_mtx) {
+        sys_err = pthread_mutex_destroy(log_inst->write_mtx);
+        sanity_require(!sys_err);
+        safe_free((void**)&(log_inst->write_mtx));
+        log_inst->write_mtx = NULL;
+    }
 
     switch (log_inst->buffer_type) {
         case BUFF_TYPE_LIST:

@@ -329,7 +329,6 @@ static int parse_cfg_file(const char           *file_path,
      * find inst id and begin of the section -> string and next line {
      * generate key - value pairs till ent of the section - }
      */
-/*TODO: refactor if .. else chain*/
     while(getline(&line, &curr_len, file) > 0){
         sanity_null_ptr(line);
         sanity_require(curr_len > 0);
@@ -343,24 +342,18 @@ static int parse_cfg_file(const char           *file_path,
         	safe_free((void**)&line);
         	curr_len = 0;
         	continue;
-        }
-
-        if(strchr(fixed_line, 35)){
+        } else if(strchr(fixed_line, 35)){
             /* #: comment, skip line */
             safe_free((void**)&line);
             curr_len = 0;
             continue;
-        }
-
-        if(strchr(fixed_line, 123)){/*'{'*/
+        } else if(strchr(fixed_line, 123)){/*'{'*/
             in_cfg_section = true;
             safe_free((void**)&line);
             curr_len = 0;
             cfg_sec_cnt++;
             continue;
-        }
-
-        if(strchr(fixed_line, 125)){/*'}'*/
+        } else if(strchr(fixed_line, 125)){/*'}'*/
             in_cfg_section = false;
             safe_free((void**)&line);
             curr_len = 0;
@@ -508,12 +501,7 @@ void safe_free_cfg_info(log_inst_cgf_info_t *cfg_info_arr)
     }
 
     node = cfg_info_arr->name_val_list;
-    safe_free_name_val_list(&node);
-    /*TODO:cleanup*/
-    /*while(node){
-       safe_free((void**)&node->val);
-       node = node->next;
-    }*/
+    safe_free_name_val_list(&node);    
 }
 
 static int apply_cfg_info_to_unit(log_inst_cgf_info_t *cfg_info_arr,

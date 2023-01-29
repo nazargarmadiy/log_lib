@@ -15,12 +15,6 @@ int main(int argc, char **argv)
 	int   err = ERR_NO_ERR;
 	char *time_str = NULL;
 
-	/****/
-	log_unit_t unit = {0};
-	read_apply_cfg_file("cfg.txt", &unit);
-	log_unit_deinit(&unit);
-	/****/
-
 	err = get_date_time_str(true, NULL, &time_str);
 	sanity_err(err);
 
