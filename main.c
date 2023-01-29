@@ -6,7 +6,7 @@
 #include "log_lib_hdrs.h"
 
 
-#define TEST_FILE_NAME "TEST_log.txt"
+#define TEST_FILE_NAME "output/TEST_log.txt"
 
 int do_test_cases();
 
@@ -18,6 +18,7 @@ int main(int argc, char **argv)
 	/****/
 	log_unit_t unit = {0};
 	read_apply_cfg_file("cfg.txt", &unit);
+	log_unit_deinit(&unit);
 	/****/
 
 	err = get_date_time_str(true, NULL, &time_str);

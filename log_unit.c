@@ -52,6 +52,7 @@ int log_unit_deinit(log_unit_t *unit)
         sanity_err(err);
         tmp_inst_ptr++;
     }
+    safe_free((void**)&(unit->cfg_file_path));
 
 exit_label:
     return err;

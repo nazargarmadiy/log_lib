@@ -6,9 +6,18 @@ typedef struct {
     const char *name;
 } val_name_map_t;
 
+typedef enum {
+	UNDEFINED = 0,
+	LONG_LONG,
+	U_LONG_LONG,
+	LONG_DOUBLE,
+	PTR
+} val_type_t;
+
 typedef struct name_val_node {
     struct name_val_node *next;
     const char           *name;
+    val_type_t            val_type;
     union {
         void               *ptr_val;
         long long           ll_val;
@@ -21,8 +30,12 @@ typedef struct name_val_node {
  * free name_val_node_t
  * returns next field
  */
-/*TODO: need to review, looks like no need this function*/
 void* safe_free_name_val_node(name_val_node_t **ptr);
+
+/*
+ * free name_val_node_t list
+ */
+void safe_free_name_val_list(name_val_node_t **ptr);
 
 /*
  * free pointer and assign it NULL value

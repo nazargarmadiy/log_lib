@@ -13,17 +13,31 @@ void* safe_free_name_val_node(name_val_node_t **ptr)
        return tmp_ptr;
     }
 
-    /*tmp_ptr = (*ptr)->name;
-    safe_free((void**)&tmp_ptr);*/
-
-    /*tmp_ptr = (*ptr)->val;
-    safe_free((void**)&tmp_ptr);*/
+    if((*ptr)->val_type == PTR) {
+		tmp_ptr = (void*)(*ptr)->val.ptr_val;
+		safe_free((void**)&tmp_ptr);
+	}
 
     tmp_ptr = (*ptr)->next;
 
     safe_free((void**)ptr);
 
     return tmp_ptr;
+}
+
+void safe_free_name_val_list(name_val_node_t **ptr)
+{
+	void *tmp_ptr = NULL;
+
+	if(!ptr || !*ptr){
+		return;
+	}
+
+	tmp_ptr = *ptr;
+	while(tmp_ptr) {
+		tmp_ptr = safe_free_name_val_node(tmp_ptr);
+	}
+	*ptr = tmp_ptr;
 }
 
 void safe_free(void **ptr)

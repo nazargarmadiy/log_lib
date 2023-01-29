@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include "cfg_file_parse.h"
 #include "common_defs.h"
 #include "common_func.h"
@@ -31,6 +32,10 @@ static int   watch_dscrpt = 0;
 #define CFG_RT_FILE_PRFX    "rotate_file_prefix"
 #define CFG_FILE_MAX_SZ     "file_max_size"
 
+
+static int fix_cfg_line(const char    *in_line,
+		                char         **out_line,
+						size_t        *out_len);
 static int parse_cfg_file(const char           *file_path,
                           log_inst_cgf_info_t **ret_arr,
                           unsigned int         *ret_arr_len);
@@ -39,7 +44,7 @@ static int apply_cfg_info_to_unit(log_inst_cgf_info_t *cfg_info_arr,
                                   log_unit_t          *log_unit);
 static int apply_cfg_info_to_instance(log_inst_cgf_info_t *cfg_info,
                                       log_inst_t          *log_inst);
-void safe_free_cfg_info(log_inst_cgf_info_t *cfg_info_arr);
+void safe_free_cfg_info(log_inst_cgf_info_t *cfg_info_ptr);
 static int parse_str_to_name_val(const char *line, name_val_node_t *node);
 static int watch_cfg_file_loop(void);
 
@@ -110,7 +115,6 @@ int read_apply_cfg_file(const char *file_path, log_unit_t *log_unit)
     sanity_err(err);
     sanity_require(file_found);
 
-    /***/
     unsigned int arr_len = 0;
     log_inst_cgf_info_t *cfg_info_arr = NULL;
 
@@ -124,10 +128,11 @@ int read_apply_cfg_file(const char *file_path, log_unit_t *log_unit)
 
     strncpy(log_unit->cfg_file_path, file_path, path_len);
 
-    /***/
-
 exit_label:
-/*TODO: free cfg_info_arr*/
+
+	while(arr_len--) {
+		safe_free_cfg_info(cfg_info_arr + arr_len);
+	}
     return err;
 }
 
@@ -225,6 +230,64 @@ exit_label:
     return err;
 }
 
+/*
+ * remove spaces and other non-printable symbols for beginning and end
+ */
+static int fix_cfg_line(const char    *in_line,
+		                char         **out_line,
+						size_t        *out_len)
+{
+	int           err = ERR_NO_ERR;
+	size_t        curr_len = 0;
+	unsigned int  curr_pos = 0;
+	const char   *curr_in_line = NULL;
+	char         *fixed_line = NULL;
+
+	sanity_null_ptr(in_line);
+	sanity_null_ptr(out_line);
+	sanity_require(!(*out_line));
+	sanity_null_ptr(out_len);
+
+	*out_len = 0;
+
+	/*
+	 * calculate str len without white-space symbols
+	 * copy string symbol by symbol skipping white-spaces
+	 */
+	curr_in_line = in_line;
+
+	while(*curr_in_line != '\0') {
+		if(!isspace(*curr_in_line)) {
+			curr_len++;
+		}
+		curr_in_line++;
+	}
+
+	if(!curr_len) {
+		/* empty string */
+		goto exit_label;
+	}
+
+	fixed_line = calloc(1, curr_len + 1);
+	sanity_null_ptr(fixed_line);
+
+	curr_in_line = in_line;
+
+	while(*curr_in_line != '\0') {
+		if(!isspace(*curr_in_line)) {
+			*(fixed_line + curr_pos) = *curr_in_line;
+			curr_pos++;
+		}
+		curr_in_line++;
+	}
+
+	*out_len = curr_len;
+	*out_line = fixed_line;
+
+exit_label:
+    return err;
+}
+
 static int parse_cfg_file(const char           *file_path,
                           log_inst_cgf_info_t **ret_arr,
                           unsigned int         *ret_arr_len)
@@ -237,6 +300,7 @@ static int parse_cfg_file(const char           *file_path,
     unsigned int         cfg_sec_cnt = 0;
     FILE                *file = NULL;
     char                *line = NULL;
+    char                *fixed_line = NULL;
     size_t               curr_len = 0;
     name_val_node_t     *curr_name_val_node = NULL;
     name_val_node_t     **next_node = NULL;
@@ -266,19 +330,29 @@ static int parse_cfg_file(const char           *file_path,
      * generate key - value pairs till ent of the section - }
      */
 /*TODO: refactor if .. else chain*/
-/*TODO: scip spaces and tabs*/
     while(getline(&line, &curr_len, file) > 0){
         sanity_null_ptr(line);
         sanity_require(curr_len > 0);
 
-        if(strchr(line, 35)){
+        safe_free((void**)&fixed_line);
+        err = fix_cfg_line(line, &fixed_line, &curr_len);
+        sanity_err(err);
+
+        if(!fixed_line) {
+        	/* empty line */
+        	safe_free((void**)&line);
+        	curr_len = 0;
+        	continue;
+        }
+
+        if(strchr(fixed_line, 35)){
             /* #: comment, skip line */
             safe_free((void**)&line);
             curr_len = 0;
             continue;
         }
 
-        if(strchr(line, 123)){/*'{'*/
+        if(strchr(fixed_line, 123)){/*'{'*/
             in_cfg_section = true;
             safe_free((void**)&line);
             curr_len = 0;
@@ -286,7 +360,7 @@ static int parse_cfg_file(const char           *file_path,
             continue;
         }
 
-        if(strchr(line, 125)){/*'}'*/
+        if(strchr(fixed_line, 125)){/*'}'*/
             in_cfg_section = false;
             safe_free((void**)&line);
             curr_len = 0;
@@ -298,7 +372,7 @@ static int parse_cfg_file(const char           *file_path,
             curr_name_val_node = calloc(1, sizeof(name_val_node_t));
             sanity_null_ptr(curr_name_val_node);
 
-            err = parse_str_to_name_val(line, curr_name_val_node);
+            err = parse_str_to_name_val(fixed_line, curr_name_val_node);
             sanity_err(err);
 
             /*copy address of the created node*/
@@ -315,7 +389,7 @@ static int parse_cfg_file(const char           *file_path,
             (cfg_arr + inst_cnt -1)->inst_id = calloc(1, curr_len +1);
             sanity_null_ptr((cfg_arr + inst_cnt -1)->inst_id);
 
-            strncpy((cfg_arr + inst_cnt -1)->inst_id, line, curr_len +1);
+            strncpy((cfg_arr + inst_cnt -1)->inst_id, fixed_line, curr_len +1);
 
             /*save address of the first element */
             next_node = &((cfg_arr + inst_cnt -1)->name_val_list);
@@ -328,7 +402,7 @@ static int parse_cfg_file(const char           *file_path,
     /* ensure that config section closed by '}' symbol */
     sanity_require(!in_cfg_section);
     /*ensure that each instance has own config section*/
-    sanity_require(in_cfg_section == cfg_sec_cnt);
+    sanity_require(inst_cnt == cfg_sec_cnt);
 
     *ret_arr = cfg_arr;
     *ret_arr_len = inst_cnt;
@@ -343,6 +417,7 @@ exit_label:
     safe_free((void**)&curr_name_val_node);
     safe_free((void**)&cfg_arr);
     safe_free((void**)&line);
+    safe_free((void**)&fixed_line);
     return err;
 }
 
@@ -370,16 +445,19 @@ static int parse_str_to_name_val(const char *line, name_val_node_t *node)
         node->name = CFG_FILE;
         val_len = strlen(delimiter +1);
         sanity_require(val_len > 0);
+        node->val_type = PTR;
         node->val.ptr_val = calloc(1, val_len +1);
         sanity_null_ptr(node->val.ptr_val);
         strncpy(node->val.ptr_val, delimiter +1, val_len);
     } else if (!strcmp(name, CFG_BUFF_SZ)){
         /* buff_size option */
         node->name = CFG_BUFF_SZ;
+        node->val_type = U_LONG_LONG;
         node->val.ull_val = strtoull(delimiter +1, NULL, 0);
     } else if (!strcmp(name, CFG_BUFF_TP)){
         /* buff_type option */
         node->name = CFG_BUFF_TP;
+        node->val_type = U_LONG_LONG;
         if(!strcmp(delimiter +1, "BUFF_TYPE_RING")){
             node->val.ull_val = BUFF_TYPE_RING;
         } else if (!strcmp(delimiter +1, "BUFF_TYPE_LIST")) {
@@ -391,18 +469,21 @@ static int parse_str_to_name_val(const char *line, name_val_node_t *node)
     } else if (!strcmp(name, CFG_RT_FILE_CNT)) {
         /* rotate_file_count */
         node->name = CFG_RT_FILE_CNT;
+        node->val_type = LONG_LONG;
         node->val.ll_val = strtoll(delimiter +1, NULL, 0);
     } else if (!strcmp(name, CFG_RT_FILE_PRFX)){
         /* rotate_file_prefix option */
         node->name = CFG_RT_FILE_PRFX;
         val_len = strlen(delimiter +1);
         sanity_require(val_len > 0);
+        node->val_type = PTR;
         node->val.ptr_val = calloc(1, val_len +1);
         sanity_null_ptr(node->val.ptr_val);
         strncpy(node->val.ptr_val, delimiter +1, val_len);
     } else if (!strcmp(name, CFG_FILE_MAX_SZ)){
         /* file_max_size */
         node->name = CFG_FILE_MAX_SZ;
+        node->val_type = U_LONG_LONG;
         node->val.ull_val = strtoull(delimiter +1, NULL, 0);
     } else {
         err = ERR_UNXP_CASE;
@@ -427,10 +508,12 @@ void safe_free_cfg_info(log_inst_cgf_info_t *cfg_info_arr)
     }
 
     node = cfg_info_arr->name_val_list;
-    while(node){
+    safe_free_name_val_list(&node);
+    /*TODO:cleanup*/
+    /*while(node){
        safe_free((void**)&node->val);
        node = node->next;
-    }
+    }*/
 }
 
 static int apply_cfg_info_to_unit(log_inst_cgf_info_t *cfg_info_arr,
